@@ -1,7 +1,7 @@
 //! Minimal OpenRouter chat client, logprob-first.
 //!
 //! One call, one capture: [`Gateway::chat`] posts a [`ChatSpec`], captures
-//! the exact response bytes into a [`ProviderCapture`](crate::capture::ProviderCapture),
+//! the exact response bytes into a [`ProviderCapture`],
 //! and hands back the parsed pieces an instrument needs (content, the FULL
 //! array of answer-position top-logprobs, usage). It does not classify
 //! refusals, does not pick a "best" logprob position, and does not decide

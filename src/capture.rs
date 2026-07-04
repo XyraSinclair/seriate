@@ -3,7 +3,7 @@
 //! alongside it.
 //!
 //! Every [`crate::record::JudgementRecord`] points at a
-//! [`ProviderCapture`] by [`CaptureId`](crate::ontology::CaptureId), and the
+//! [`ProviderCapture`] by [`CaptureId`], and the
 //! id is a hash of the exact bytes that came back over the wire — not a
 //! re-serialization, not a parsed structure. If a provider byte flips, the
 //! id changes; nothing downstream can silently drift from what was actually

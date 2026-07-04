@@ -33,6 +33,10 @@ pub use ontology::{
     Attribute, AttributeId, CaptureId, ContentId, Entity, EntityId, JudgementId, PairKey,
     Presentation, TemplateHash,
 };
+pub use capture::ProviderCapture;
+pub use compile::{compile, CompileError, CompiledPosterior, EntityPosterior, Tolerances};
+pub use gateway::{ChatOutcome, ChatSpec, Gateway, GatewayError, TokenLogprob, Usage};
+pub use log::{EvidenceLog, LogError, ProvenanceChain};
 pub use record::{
     AcquisitionMode, Cost, DecodeConfig, EvidenceHealth, InstrumentKind, JudgementRecord,
     ParserVersion,

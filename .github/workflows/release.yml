@@ -75,7 +75,7 @@ jobs:
         shell: bash
         run: |
           asset="seriate-${GITHUB_REF_NAME}-${{ matrix.target }}.tar.gz"
-          tar -C "target/${{ matrix.target }}/release" -czf "$asset" cardinal
+          tar -C "target/${{ matrix.target }}/release" -czf "$asset" seriate
           shasum -a 256 "$asset" > "$asset.sha256"
           echo "asset=$asset" >> "$GITHUB_OUTPUT"
 

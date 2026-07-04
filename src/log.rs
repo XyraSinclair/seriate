@@ -441,7 +441,15 @@ impl EvidenceLog {
         }
         match found {
             None => Ok(None),
-            Some(json) => Ok(Some(serde_json::from_str(&json)?)),
+            Some(json) => {
+                let record: JudgementRecord = serde_json::from_str(&json)?;
+                // Fail closed on read, not only on write: a row mutated
+                // behind the log's back must never flow downstream.
+                if !record.verify_id() {
+                    return Err(LogError::TamperedJudgement(id_or_prefix.to_string()));
+                }
+                Ok(Some(record))
+            }
         }
     }
 

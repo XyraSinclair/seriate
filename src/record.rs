@@ -236,6 +236,47 @@ mod tests {
     }
 
     #[test]
+    fn json_round_trip_preserves_id() {
+        // Evidence with non-trivial floats (real exp() values).
+        let ev = crate::evidence::evidence_from_logprobs(
+            &[
+                crate::evidence::AtomLogprob {
+                    atom: AnswerAtom::A(3),
+                    logprob: -0.2231435,
+                },
+                crate::evidence::AtomLogprob {
+                    atom: AnswerAtom::Parity,
+                    logprob: -2.3025851,
+                },
+            ],
+            Some(0.95),
+        )
+        .unwrap();
+        let r = sample_record(ev);
+        assert!(r.verify_id());
+        let json = serde_json::to_string(&r).unwrap();
+        let back: JudgementRecord = serde_json::from_str(&json).unwrap();
+        if !back.verify_id() {
+            let a = serde_json::to_string(&r).unwrap();
+            let b = serde_json::to_string(&back).unwrap();
+            for (i, (ca, cb)) in a.chars().zip(b.chars()).enumerate() {
+                if ca != cb {
+                    panic!(
+                        "first divergence at {i}: ...{}... vs ...{}...",
+                        &a[i.saturating_sub(60)..(i + 60).min(a.len())],
+                        &b[i.saturating_sub(60)..(i + 60).min(b.len())]
+                    );
+                }
+            }
+            panic!(
+                "same serialization but verify failed: len {} vs {}",
+                a.len(),
+                b.len()
+            );
+        }
+    }
+
+    #[test]
     fn tampering_breaks_verification() {
         let ev = evidence_from_resamples(&[AnswerAtom::A(1)]).unwrap();
         let mut r = sample_record(ev);

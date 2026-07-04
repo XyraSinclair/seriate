@@ -547,8 +547,7 @@ mod tests {
         let outcome = gw.chat(&spec()).await.expect("mocked call succeeds");
 
         assert_eq!(outcome.capture.raw, raw);
-        assert_eq!(outcome.capture.id, CaptureId::derive(raw.as_bytes()));
-        assert!(outcome.capture.verify());
+        assert!(outcome.capture.verify(), "id binds to the whole event");
         assert_eq!(outcome.capture.model, "openai/gpt-4.1-mini");
         assert_eq!(outcome.capture.url_path, "/chat/completions");
         assert_eq!(outcome.content, "hello");

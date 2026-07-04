@@ -141,6 +141,10 @@ pub struct CompiledPosterior {
     pub records_used: usize,
     /// Number of input records skipped because `health.refused` was set.
     pub records_skipped_refused: usize,
+    /// Full posterior covariance of the latents, `(L + ridge·I)⁻¹`, kept so
+    /// pairwise difference variances can cancel the shared per-component
+    /// gauge mode exactly (see `p_higher`). Row-major, `n × n`.
+    covariance: Vec<Vec<f64>>,
     /// Number of (non-refused) input records skipped because their evidence
     /// carried no informative mass (so no log-ratio moments could be
     /// computed), or because the resulting weight was non-positive.
@@ -175,11 +179,13 @@ impl CompiledPosterior {
             return None;
         }
         let diff_mean = a.latent_mean - b.latent_mean;
-        let diff_var = a.latent_std * a.latent_std + b.latent_std * b.latent_std;
-        // diff_var > 0 always in practice: it is the sum of two diagonal
-        // entries of the inverse of a symmetric positive-definite matrix
-        // (weighted Laplacian + ridge*I with ridge > 0), each strictly
-        // positive. Guard anyway rather than divide by exactly zero.
+        // Exact difference variance: Σᵢᵢ + Σⱼⱼ − 2Σᵢⱼ. The cross term is
+        // what cancels the shared gauge mode (the ~1/ridge constant vector
+        // every same-component entry carries); a diagonal-only
+        // approximation here makes p_higher collapse toward 0.5 at small
+        // ridge. Found by the integration battery.
+        let diff_var = self.covariance[i][i] + self.covariance[j][j] - 2.0 * self.covariance[i][j];
+        // Guard anyway rather than divide by exactly zero.
         let z = if diff_var > 0.0 {
             diff_mean / diff_var.sqrt()
         } else if diff_mean > 0.0 {
@@ -287,7 +293,6 @@ pub fn compile(
     // floating point.
     let inverse = invert(&laplacian).unwrap_or_else(|| vec![vec![0.0; n]; n]);
     let mut latent = matvec(&inverse, &rhs);
-    let variance: Vec<f64> = (0..n).map(|i| inverse[i][i].max(0.0)).collect();
 
     // Connected components over the surviving edges; an entity touched by no
     // surviving record is its own singleton component.
@@ -337,6 +342,26 @@ pub fn compile(
         }
     }
 
+    // Per-entity variance in the CENTERED (mean-zero-per-component) gauge:
+    // Var(sᵢ − mean_C(s)) = Σᵢᵢ − (2/|C|)·Σⱼ Σᵢⱼ + (1/|C|²)·Σⱼₖ Σⱼₖ over the
+    // entity's component C. The gauge mode is a constant vector within a
+    // component, so its (ridge-scale) contribution cancels exactly here —
+    // latent_std is now a meaningful spread, not a gauge artifact.
+    let mut variance = vec![0.0_f64; n];
+    for component in &components {
+        let m = component.len() as f64;
+        let mut grand: f64 = 0.0;
+        for &j in component {
+            for &k in component {
+                grand += inverse[j][k];
+            }
+        }
+        for &i in component {
+            let cross: f64 = component.iter().map(|&j| inverse[i][j]).sum();
+            variance[i] = (inverse[i][i] - 2.0 * cross / m + grand / (m * m)).max(0.0);
+        }
+    }
+
     let entities_out = (0..n)
         .map(|i| EntityPosterior {
             entity: entities[i].id.clone(),
@@ -348,6 +373,7 @@ pub fn compile(
 
     Ok(CompiledPosterior {
         entities: entities_out,
+        covariance: inverse,
         components,
         records_used,
         records_skipped_refused,

@@ -234,7 +234,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         system: rendered.system.clone(),
                         user: rendered.user.clone(),
                         temperature: 0.0,
-                        max_tokens: 8,
+                        max_tokens: 16,
                         top_logprobs: Some(top_logprobs),
                         response_format_json: false,
                     };
@@ -278,7 +278,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         model.clone(),
                         DecodeConfig {
                             temperature: 0.0,
-                            max_tokens: 8,
+                            max_tokens: 16,
                             top_logprobs: Some(top_logprobs),
                         },
                         outcome.capture.id.clone(),

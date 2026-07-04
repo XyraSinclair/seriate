@@ -63,7 +63,7 @@ pub async fn probe_model(
         system: rendered.system.clone(),
         user: rendered.user.clone(),
         temperature: 0.0,
-        max_tokens: 8,
+        max_tokens: 16,
         top_logprobs: Some(20),
         response_format_json: false,
     };
@@ -97,7 +97,7 @@ pub async fn probe_model(
             system: rendered.system.clone(),
             user: rendered.user.clone(),
             temperature: 1.0,
-            max_tokens: 8,
+            max_tokens: 16,
             top_logprobs: None,
             response_format_json: false,
         };

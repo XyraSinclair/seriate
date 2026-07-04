@@ -203,7 +203,7 @@ impl AnswerEvidence {
                         p: x.p,
                     })
                     .collect();
-                s.sort_by(|l, r| l.atom.cmp(&r.atom));
+                s.sort_by_key(|x| x.atom);
                 s
             },
             completeness: self.completeness,

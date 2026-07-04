@@ -145,6 +145,62 @@ impl AnswerAtom {
     }
 }
 
+/// Interpolate a continuous positive ratio onto the answer alphabet as a
+/// one- or two-atom PMF whose expected signed log-ratio equals `ln(ratio)`
+/// exactly (log-linear interpolation between adjacent rungs; saturates at
+/// the ladder's ends). `side` states which slot the ratio favors; a ratio
+/// of exactly 1.0 is parity regardless of side.
+///
+/// Salvaged invariant from the diamond2 quarry
+/// (`ratio_interpolation_preserves_log_ratio_mean`).
+pub fn interpolate_ratio(side: Side, ratio: f64) -> Option<Vec<(AnswerAtom, f64)>> {
+    if !ratio.is_finite() || ratio <= 0.0 {
+        return None;
+    }
+    // Normalize to "winner ratio >= 1" coordinates.
+    let (side, r) = if ratio >= 1.0 {
+        (side, ratio)
+    } else {
+        (side.flipped(), 1.0 / ratio)
+    };
+    let atom_at = |k: usize| match side {
+        Side::A => AnswerAtom::A(k as u8),
+        Side::B => AnswerAtom::B(k as u8),
+    };
+    let target = r.ln();
+    // Rung log-values, with parity (0.0) as the virtual rung below index 1.
+    let last = RATIO_LADDER.len();
+    if r >= RATIO_LADDER[last - 1] {
+        return Some(vec![(atom_at(last), 1.0)]);
+    }
+    let mut lower_log = 0.0; // parity
+    let mut lower_atom = AnswerAtom::Parity;
+    for (i, rung) in RATIO_LADDER.iter().enumerate() {
+        let upper_log = rung.ln();
+        if target <= upper_log {
+            let upper_atom = atom_at(i + 1);
+            let span = upper_log - lower_log;
+            let w_upper = if span > 0.0 {
+                (target - lower_log) / span
+            } else {
+                1.0
+            };
+            let w_lower = 1.0 - w_upper;
+            let mut out = Vec::with_capacity(2);
+            if w_lower > 0.0 {
+                out.push((lower_atom, w_lower));
+            }
+            if w_upper > 0.0 {
+                out.push((upper_atom, w_upper));
+            }
+            return Some(out);
+        }
+        lower_log = upper_log;
+        lower_atom = atom_at(i + 1);
+    }
+    unreachable!("target below last rung is handled inside the loop");
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -200,6 +256,44 @@ mod tests {
         for w in RATIO_LADDER.windows(2) {
             assert!(w[1] > w[0], "ladder strictly increasing");
         }
+    }
+
+    #[test]
+    fn interpolation_preserves_log_ratio_mean_exactly() {
+        for &r in &[1.0, 1.06, 1.4, 2.0, 3.0, 9.95, 500.0, 999.0] {
+            let atoms = interpolate_ratio(Side::A, r).unwrap();
+            let total: f64 = atoms.iter().map(|(_, w)| w).sum();
+            assert!((total - 1.0).abs() < 1e-12, "weights normalized at {r}");
+            let mean: f64 = atoms
+                .iter()
+                .map(|(a, w)| w * a.signed_log_ratio().unwrap())
+                .sum();
+            assert!(
+                (mean - r.ln()).abs() < 1e-9,
+                "mean preserved at {r}: {mean} vs {}",
+                r.ln()
+            );
+        }
+    }
+
+    #[test]
+    fn interpolation_saturates_and_flips() {
+        // Beyond the top rung: full mass on Z.
+        let atoms = interpolate_ratio(Side::A, 5000.0).unwrap();
+        assert_eq!(atoms, vec![(AnswerAtom::A(25), 1.0)]);
+        // Sub-unity ratios flip the side.
+        let atoms = interpolate_ratio(Side::A, 0.5).unwrap();
+        assert!(atoms
+            .iter()
+            .all(|(a, _)| matches!(a, AnswerAtom::B(_) | AnswerAtom::Parity)));
+        let mean: f64 = atoms
+            .iter()
+            .map(|(a, w)| w * a.signed_log_ratio().unwrap())
+            .sum();
+        assert!((mean - 0.5f64.ln()).abs() < 1e-9);
+        // Degenerate inputs are rejected.
+        assert!(interpolate_ratio(Side::A, 0.0).is_none());
+        assert!(interpolate_ratio(Side::A, f64::NAN).is_none());
     }
 
     #[test]

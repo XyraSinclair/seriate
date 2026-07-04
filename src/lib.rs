@@ -18,7 +18,7 @@ pub mod evidence;
 pub mod ontology;
 pub mod record;
 
-pub use atom::{AnswerAtom, Side, RATIO_LADDER};
+pub use atom::{interpolate_ratio, AnswerAtom, Side, RATIO_LADDER};
 pub use evidence::{
     evidence_from_logprobs, evidence_from_resamples, fused_evidence, jsd, AnswerEvidence,
     AtomLogprob, AtomProb, EvidenceError, PmfCompleteness,

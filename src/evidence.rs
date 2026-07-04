@@ -128,6 +128,16 @@ impl AnswerEvidence {
             .unwrap_or(0.0)
     }
 
+    /// Mass on tokens that were visible but parsed to no atom.
+    pub fn off_alphabet_mass(&self) -> f64 {
+        self.p(AnswerAtom::OffAlphabet)
+    }
+
+    /// Mass the provider never made visible.
+    pub fn abstain_mass(&self) -> f64 {
+        self.p(AnswerAtom::Abstain)
+    }
+
     /// Total mass on informative atoms (everything except escapes).
     pub fn informative_mass(&self) -> f64 {
         self.support
@@ -215,7 +225,7 @@ pub fn evidence_from_logprobs(
         return Err(EvidenceError::Empty);
     }
     let mut support = Vec::with_capacity(atom_logprobs.len() + 2);
-    let mut shown = 0.0;
+    let mut shown: f64 = 0.0;
     for AtomLogprob { atom, logprob } in atom_logprobs {
         if !logprob.is_finite() {
             return Err(EvidenceError::NonFinite);
@@ -227,8 +237,18 @@ pub fn evidence_from_logprobs(
         shown += p;
         support.push(AtomProb { atom: *atom, p });
     }
-    let visible = visible_mass.unwrap_or(shown);
-    if !visible.is_finite() || !(0.0..=1.0 + 1e-9).contains(&visible) || shown > visible + 1e-6 {
+    let mut visible = visible_mass.unwrap_or(shown);
+    // Real provider quirk: the chosen token's logprob is sometimes rounded to
+    // exactly 0.0 while alternatives stay finite, pushing summed mass a hair
+    // over 1.0. Forgive small overflow by clamping; reject real nonsense.
+    const PROVIDER_ROUNDING_SLOP: f64 = 1e-4;
+    if visible.is_finite() && visible > 1.0 && visible <= 1.0 + PROVIDER_ROUNDING_SLOP {
+        visible = 1.0;
+    }
+    if shown.is_finite() && shown > visible && shown <= visible + PROVIDER_ROUNDING_SLOP {
+        shown = visible;
+    }
+    if !visible.is_finite() || !(0.0..=1.0).contains(&visible) || shown > visible {
         return Err(EvidenceError::InvalidMass);
     }
     let off_alphabet = (visible - shown).max(0.0);
@@ -460,6 +480,36 @@ mod tests {
         .unwrap();
         assert_eq!(ev.completeness, PmfCompleteness::Complete);
         assert_eq!(ev.p(AnswerAtom::Abstain), 0.0);
+    }
+
+    #[test]
+    fn visible_mass_clamps_small_provider_rounding_overflow() {
+        // Chosen token rounded to logprob 0.0 (p=1.0) with a finite alt:
+        // summed mass 1.0000001 must clamp, not error.
+        let ev = evidence_from_logprobs(
+            &[
+                AtomLogprob {
+                    atom: AnswerAtom::A(1),
+                    logprob: 0.0,
+                },
+                AtomLogprob {
+                    atom: AnswerAtom::B(1),
+                    logprob: (1e-7f64).ln(),
+                },
+            ],
+            None,
+        )
+        .unwrap();
+        assert_eq!(ev.completeness, PmfCompleteness::Complete);
+        // Genuine nonsense still rejected.
+        assert!(evidence_from_logprobs(
+            &[AtomLogprob {
+                atom: AnswerAtom::A(1),
+                logprob: 0.5
+            }],
+            None
+        )
+        .is_err());
     }
 
     #[test]

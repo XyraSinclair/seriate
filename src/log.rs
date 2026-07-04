@@ -569,7 +569,7 @@ impl EvidenceLog {
     }
 
     /// Dump the entire log as newline-delimited JSON, one tagged
-    /// [`LogLine`] per row, entities/attributes/captures/judgements in
+    /// one tagged line per row, entities/attributes/captures/judgements in
     /// that order (a valid dependency order for [`Self::import_jsonl`]).
     pub fn export_jsonl(&self, path: impl AsRef<Path>) -> Result<(), LogError> {
         let mut out = std::io::BufWriter::new(std::fs::File::create(path)?);

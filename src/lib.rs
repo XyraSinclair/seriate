@@ -14,8 +14,14 @@
 //!    every PMF carries its [`evidence::PmfCompleteness`].
 
 pub mod atom;
+pub mod capture;
+pub mod compile;
 pub mod evidence;
+pub mod gateway;
+pub mod instrument;
+pub mod log;
 pub mod ontology;
+pub mod probe;
 pub mod record;
 
 pub use atom::{interpolate_ratio, AnswerAtom, Side, RATIO_LADDER};

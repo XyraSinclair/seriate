@@ -246,7 +246,7 @@ mod tests {
                 },
                 crate::evidence::AtomLogprob {
                     atom: AnswerAtom::Parity,
-                    logprob: -2.3025851,
+                    logprob: -2.2072749,
                 },
             ],
             Some(0.95),

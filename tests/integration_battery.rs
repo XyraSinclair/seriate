@@ -2,8 +2,6 @@
 //! gateway → instrument → evidence log → compiler, with a deterministic
 //! wiremock provider. Every assertion is falsifiable by a plausible bug.
 
-use std::sync::Arc;
-
 use serde_json::json;
 use seriate::instrument::ratio_letter::RatioLetterInstrument;
 use seriate::instrument::Instrument;
@@ -79,7 +77,7 @@ impl Respond for StarJudge {
                 "logprob": -0.223_143_5, // p = 0.8
                 "top_logprobs": [
                     { "token": letter.to_string(), "logprob": -0.223_143_5 },  // 0.8
-                    { "token": "A", "logprob": -2.302_585_1 },                  // 0.1 parity
+                    { "token": "A", "logprob": -2.207_274_9 },                  // 0.11 parity
                     { "token": "The", "logprob": -2.995_732_3 },                // 0.05 junk
                 ]
             }]
@@ -247,11 +245,11 @@ async fn junk_topk_mass_is_split_between_off_alphabet_and_abstain() {
     let chain = log.provenance(&id.0 .0).unwrap();
     let ev = &chain.judgement.evidence;
 
-    // Fixture: 0.8 letter + 0.1 parity parsed; 0.05 junk ('The') visible;
-    // 0.05 never shown. Informative = 0.9, OffAlphabet = 0.05, Abstain = 0.05.
-    assert!((ev.informative_mass() - 0.9).abs() < 1e-6, "{ev:?}");
-    assert!((ev.off_alphabet_mass() - 0.05).abs() < 1e-6);
-    assert!((ev.abstain_mass() - 0.05).abs() < 1e-6);
+    // Fixture: 0.8 letter + 0.11 parity parsed; 0.05 junk ('The') visible;
+    // 0.04 never shown. Informative = 0.91, OffAlphabet = 0.05, Abstain = 0.04.
+    assert!((ev.informative_mass() - 0.91).abs() < 1e-3, "{ev:?}");
+    assert!((ev.off_alphabet_mass() - 0.05).abs() < 1e-3);
+    assert!((ev.abstain_mass() - 0.04).abs() < 1e-3);
     let total = ev.informative_mass() + ev.off_alphabet_mass() + ev.abstain_mass();
     assert!((total - 1.0).abs() < 1e-9, "every unit of mass accounted");
     assert_eq!(chain.judgement.mode, AcquisitionMode::Logprob);

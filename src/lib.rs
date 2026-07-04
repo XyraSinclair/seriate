@@ -25,18 +25,18 @@ pub mod probe;
 pub mod record;
 
 pub use atom::{interpolate_ratio, AnswerAtom, Side, RATIO_LADDER};
+pub use capture::ProviderCapture;
+pub use compile::{compile, CompileError, CompiledPosterior, EntityPosterior, Tolerances};
 pub use evidence::{
     evidence_from_logprobs, evidence_from_resamples, fused_evidence, jsd, AnswerEvidence,
     AtomLogprob, AtomProb, EvidenceError, PmfCompleteness,
 };
+pub use gateway::{ChatOutcome, ChatSpec, Gateway, GatewayError, TokenLogprob, Usage};
+pub use log::{EvidenceLog, LogError, ProvenanceChain};
 pub use ontology::{
     Attribute, AttributeId, CaptureId, ContentId, Entity, EntityId, JudgementId, PairKey,
     Presentation, TemplateHash,
 };
-pub use capture::ProviderCapture;
-pub use compile::{compile, CompileError, CompiledPosterior, EntityPosterior, Tolerances};
-pub use gateway::{ChatOutcome, ChatSpec, Gateway, GatewayError, TokenLogprob, Usage};
-pub use log::{EvidenceLog, LogError, ProvenanceChain};
 pub use record::{
     AcquisitionMode, Cost, DecodeConfig, EvidenceHealth, InstrumentKind, JudgementRecord,
     ParserVersion,

@@ -108,7 +108,7 @@ pub enum CompileError {
 }
 
 /// One entity's compiled posterior over the latent attribute scale.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(serde::Serialize, Clone, Debug, PartialEq)]
 pub struct EntityPosterior {
     /// Identifies which roster entity this posterior is for.
     pub entity: EntityId,
@@ -127,7 +127,7 @@ pub struct EntityPosterior {
 }
 
 /// The compiled posterior for one attribute over one entity roster.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize)]
 pub struct CompiledPosterior {
     /// One posterior per roster entity, in the same order as the roster
     /// passed to [`compile`].
@@ -143,7 +143,9 @@ pub struct CompiledPosterior {
     pub records_skipped_refused: usize,
     /// Full posterior covariance of the latents, `(L + ridge·I)⁻¹`, kept so
     /// pairwise difference variances can cancel the shared per-component
-    /// gauge mode exactly (see `p_higher`). Row-major, `n × n`.
+    /// gauge mode exactly (see `p_higher`). Row-major, `n × n`. Not
+    /// serialized: it is O(n²) derived state, recomputable from the log.
+    #[serde(skip)]
     covariance: Vec<Vec<f64>>,
     /// Number of (non-refused) input records skipped because their evidence
     /// carried no informative mass (so no log-ratio moments could be

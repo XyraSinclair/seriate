@@ -456,7 +456,6 @@ fn extract_usage(response: &Value) -> Usage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ontology::CaptureId;
     use std::sync::Mutex;
     use wiremock::matchers::{method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};

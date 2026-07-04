@@ -503,6 +503,22 @@ impl EvidenceLog {
         }))
     }
 
+    /// List every registered attribute (name + full text), for lookup UIs.
+    pub fn attributes(&self) -> Result<Vec<Attribute>, LogError> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT name, text FROM attributes ORDER BY name")?;
+        let rows = stmt.query_map([], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
+        })?;
+        let mut out = Vec::new();
+        for row in rows {
+            let (name, text) = row?;
+            out.push(Attribute::new(name, text));
+        }
+        Ok(out)
+    }
+
     fn attribute_by_id(&self, id: &AttributeId) -> Result<Option<Attribute>, LogError> {
         let row = self
             .conn

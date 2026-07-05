@@ -11,6 +11,13 @@ documentation = "https://docs.rs/seriate"
 keywords = ["llm", "annotation", "provenance", "elicitation", "ordinal"]
 categories = ["algorithms", "science", "command-line-utilities"]
 
+[features]
+default = ["sqlite"]
+# The append-only SQLite evidence log and everything that touches it.
+# The judgement core (atoms, evidence, ontology, records, instruments,
+# gateway, compiler, probe) is pure and builds without it.
+sqlite = ["dep:rusqlite"]
+
 [dependencies]
 async-trait = "0.1"
 blake3 = "1"
@@ -19,7 +26,7 @@ clap = { version = "4", features = ["derive"] }
 futures = "0.3"
 rand = "0.8"
 reqwest = { version = "0.13", features = ["json", "gzip"] }
-rusqlite = { version = "0.38", features = ["bundled"] }
+rusqlite = { version = "0.38", features = ["bundled"], optional = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip"] }
 thiserror = "2"
@@ -29,6 +36,11 @@ tracing = "0.1"
 [dev-dependencies]
 tokio-test = "0.4"
 wiremock = "0.6"
+
+[[bin]]
+name = "seriate"
+path = "src/main.rs"
+required-features = ["sqlite"]
 
 [package.metadata.docs.rs]
 all-features = true

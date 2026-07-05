@@ -19,6 +19,7 @@ pub mod compile;
 pub mod evidence;
 pub mod gateway;
 pub mod instrument;
+#[cfg(feature = "sqlite")]
 pub mod log;
 pub mod ontology;
 pub mod probe;
@@ -32,6 +33,7 @@ pub use evidence::{
     AtomLogprob, AtomProb, EvidenceError, PmfCompleteness,
 };
 pub use gateway::{ChatOutcome, ChatSpec, Gateway, GatewayError, TokenLogprob, Usage};
+#[cfg(feature = "sqlite")]
 pub use log::{EvidenceLog, LogError, ProvenanceChain};
 pub use ontology::{
     Attribute, AttributeId, CaptureId, ContentId, Entity, EntityId, JudgementId, PairKey,
